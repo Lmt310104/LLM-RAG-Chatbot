@@ -15,16 +15,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       showLoading();
-      const response = await fetch(
-        `${process.env.API_URL}rag/evaluate-result`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ result: query }),
-        }
-      );
+      const response = await fetch(`${window.API_URL}rag/evaluate-result`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ result: query }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
