@@ -1,1 +1,1 @@
-window.API_URL = "https://llm-rag-chatbot-owav.onrender.com:443/api/v1/";
+window.API_URL = "http://localhost:8080/api/v1/";

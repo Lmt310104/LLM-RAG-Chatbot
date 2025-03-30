@@ -1,73 +1,98 @@
-const llmService = require("../utils/llmService");
+const ragService = require("../services/ragService.js");
+const { catchAsync } = require("../utils/catchAsync.js");
+require("dotenv").config();
 
-async function processQuery(req, res) {
-  try {
-    const { query } = req.body;
-    if (!query) {
-      return res.status(400).json({ error: "Query is required" });
-    }
-    const response = await llmService.generateResponse(query);
-    res.json({ response });
-  } catch (error) {
-    console.error("Error processing query:", error);
-    res.status(500).json({ error: "Failed to process query" });
-  }
-}
+const processPDF = catchAsync(async (req, res) => {
+  const { filePath } = req.body;
+  const customMeta = {
+    file_id: "unique-file-id",
+    display_file_name: "display_file_name",
+    display_folder_name: "display_folder_name",
+  };
 
-async function getDocuments(req, res) {
-  try {
-    res.json({ documents: [] });
-  } catch (error) {
-    console.error("Error getting documents:", error);
-    res.status(500).json({ error: "Failed to get documents" });
-  }
-}
+  const pdfText = await ragService.loadPDF(filePath);
+  await ragService.persistEmbeddings(
+    process.env.COLLECTION_NAME,
+    pdfText,
+    customMeta
+  );
+  res.status(200).send();
+});
 
-async function addDocument(req, res) {
-  try {
-    const { document } = req.body;
-    if (!document) {
-      return res.status(400).json({ error: "Document is required" });
-    }
-    res.status(201).json({ message: "Document added successfully" });
-  } catch (error) {
-    console.error("Error adding document:", error);
-    res.status(500).json({ error: "Failed to add document" });
-  }
-}
+const processMarkdown = catchAsync(async (req, res) => {
+  const { filePath } = req.body;
+  const customMeta = {
+    file_id: "unique-file-id",
+    display_file_name: "display_file_name",
+    display_folder_name: "display_folder_name",
+  };
 
-async function deleteDocument(req, res) {
-  try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: "Document ID is required" });
-    }
-    res.json({ message: "Document deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting document:", error);
-    res.status(500).json({ error: "Failed to delete document" });
-  }
-}
+  const markdownContent = await ragService.loadMarkdown(filePath);
+  await ragService.persistEmbeddings(
+    process.env.COLLECTION_NAME,
+    markdownContent,
+    customMeta
+  );
+  const answer = await ragService.conductQuery(
+    "What is this about?",
+    process.env.COLLECTION_NAME
+  );
+  res.status(200).json({ answer });
+});
 
-async function evaluateResult(req, res) {
-  try {
-    const { result } = req.body;
-    if (!result) {
-      return res.status(400).json({ error: "Result is required" });
-    }
-    res.json({
-      result: await llmService.evaluate(result),
+const conductQuery = catchAsync(async (req, res) => {
+  const { query } = req.query;
+
+  const answer = await ragService.conductQuery(
+    query,
+    process.env.COLLECTION_NAME
+  );
+  res.status(200).json({ answer });
+});
+
+const chatQuery = catchAsync(async (req, res) => {
+  const { messages } = req.body;
+
+  const answer = await ragService.chat(messages);
+  res.status(200).json(answer);
+});
+
+const parsePDF = catchAsync(async (req, res) => {
+  const { fileUrl } = req.body;
+  const pdfText = await ragService.loadPDF(fileUrl);
+  res.status(200).json(pdfText);
+});
+
+const evaluateResult = catchAsync(async (req, res) => {
+  // Implementation for evaluating RAG results
+  const { query, expectedAnswer, actualAnswer } = req.body;
+
+  if (!query || !expectedAnswer || !actualAnswer) {
+    return res.status(400).json({
+      error: "Missing required fields: query, expectedAnswer, or actualAnswer",
     });
-  } catch (error) {
-    console.error("Error evaluating result:", error);
-    res.status(500).json({ error: "Failed to evaluate result" });
   }
-}
 
+  // Simple evaluation logic - can be expanded with more sophisticated metrics
+  const evaluation = {
+    query,
+    expectedAnswer,
+    actualAnswer,
+    relevanceScore: 0, // To be implemented
+    completenessScore: 0, // To be implemented
+    accuracyScore: 0, // To be implemented
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(200).json(evaluation);
+});
+
+// Make sure all functions are properly exported
 module.exports = {
-  processQuery,
-  getDocuments,
-  addDocument,
-  deleteDocument,
+  processPDF,
+  processMarkdown,
+  conductQuery,
+  chatQuery,
+  parsePDF,
   evaluateResult,
 };

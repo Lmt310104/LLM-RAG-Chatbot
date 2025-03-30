@@ -24,6 +24,32 @@ class LLMService {
       throw new Error("Failed to generate response from Gemini");
     }
   }
+  async generateResponse(prompt, systemMessage, maxTokens = 4096) {
+    try {
+      // Combine system message and prompt for Gemini
+      const fullPrompt = `${systemMessage}\n\nUser query: ${prompt}`;
+
+      // Configure generation parameters
+      const generationConfig = {
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: maxTokens,
+      };
+
+      // Generate content
+      const result = await this.model.generateContent({
+        contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+        generationConfig,
+      });
+
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error("Error generating response:", error);
+      throw new Error("Failed to generate response from Gemini");
+    }
+  }
 }
 
 module.exports = new LLMService();

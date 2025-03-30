@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const queryInput = document.getElementById("query");
+  const fileInput = document.getElementById("fileInput"); // Đổi từ textarea thành input file
   const submitButton = document.getElementById("submit");
   const loadingDiv = document.getElementById("loading");
   const resultDiv = document.getElementById("result");
@@ -7,20 +7,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const errorDiv = document.getElementById("error");
 
   submitButton.addEventListener("click", async () => {
-    const query = queryInput.value.trim();
-    if (!query) {
-      showError("Please enter a response to evaluate");
+    const file = fileInput.files[0]; // Lấy file từ input
+    if (!file) {
+      showError("Please select a PDF file to upload.");
       return;
     }
 
     try {
       showLoading();
-      const response = await fetch(`${window.API_URL}rag/evaluate-result`, {
+      const formData = new FormData();
+      formData.append("pdfFile", file); // Backend nhận key "file"
+
+      const response = await fetch(`${window.API_URL}rag/query-with-pdf`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ result: query }),
+        body: formData, // Không cần headers "Content-Type"
       });
 
       if (!response.ok) {
@@ -28,9 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const data = await response.json();
-      showResult(data.result);
+      showResult(data.answer);
     } catch (error) {
-      showError("Failed to evaluate response. Please try again.");
+      showError("Failed to process PDF. Please try again.");
       console.error("Error:", error);
     } finally {
       hideLoading();

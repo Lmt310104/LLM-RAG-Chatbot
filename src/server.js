@@ -16,9 +16,11 @@ app.use(express.static("public"));
 
 // Import routes
 const ragRoutes = require("./routes/rag");
+const fileRoutes = require("./routes/fileRoutes");
 
 // Use routes
 app.use("/api/v1/rag", ragRoutes);
+app.use("/api/v1/rag", fileRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
