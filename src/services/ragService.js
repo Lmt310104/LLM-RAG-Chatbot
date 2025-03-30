@@ -10,6 +10,7 @@ const { client } = require("../utils/vectorStore");
 const constant = require("../utils/constant");
 const crypto = require("crypto");
 const llmService = require("../utils/llmService");
+const { langchainGemini } = require("../utils/chatGemini");
 
 async function loadPDF(filePathOrUrl) {
   try {
@@ -53,6 +54,50 @@ async function loadPDF(filePathOrUrl) {
     throw error;
   }
 }
+const condenseQuestionTemplate = `${constant.RAG_SYSTEM_PROMPT}
+
+  Here are also the history of your conversation with user. Use this for reference if needed,. REPLY IN PLAIN TEXT AND CONCISE AND TO THE POINT PROVIDE CLEAR, STRUCTURED GUIDANCE BASED ON USER QUESTIONS. DON'T USE MARKDOWN.
+  Chat History:
+  {chat_history}
+
+  Follow Up Input: {question}`;
+const CONDENSE_QUESTION_PROMPT = PromptTemplate.fromTemplate(
+  condenseQuestionTemplate
+);
+const formatChatHistory = (chatHistory) => {
+  const formattedDialogueTurns = chatHistory.map(
+    (dialogueTurn) => `Human: ${dialogueTurn[0]}\nAssistant: ${dialogueTurn[1]}`
+  );
+  return formattedDialogueTurns.join("\n");
+};
+
+async function performSearchQuery(query, collectionTable) {
+  try {
+    const queryEmbedding = await embeddings.embedQuery(query);
+    const response = await client.search(collectionTable, {
+      vector: { name: "default", vector: queryEmbedding },
+      score_threshold: 0.0,
+      limit: 3,
+    });
+
+    return response.map((res) => res.payload.content).join("\n");
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+const standaloneQuestionChain = RunnableSequence.from([
+  {
+    question: (input) => input.question,
+    chat_history: (input) => formatChatHistory(input.chat_history),
+    context: async (input) =>
+      performSearchQuery(input.question, process.env.COLLECTION_NAME),
+  },
+  CONDENSE_QUESTION_PROMPT,
+  langchainGemini,
+  new StringOutputParser(),
+]);
 
 async function loadMarkdown(filePath) {
   const data = fs.readFileSync(filePath, "utf8");
@@ -74,7 +119,6 @@ async function conductQuery(query, collectionTable) {
       score_threshold: 0.0,
       limit: 3,
     });
-    console.log(query);
     const context = response.map((res) => res.payload.content).join("\n");
     const answer = await llmService.generateResponse(
       query,
@@ -178,9 +222,30 @@ async function persistEmbeddings(collectionTable, documents, customMeta) {
     throw new Error("Error creating collection and upserting points");
   }
 }
+
+async function chat(messages) {
+  const chatHistory = [];
+  messages.forEach((message) => {
+    if (message.role === "user") {
+      chatHistory.push({
+        role: "user",
+        content: message.content,
+      });
+    } else if (chatHistory.length > 0)
+      chatHistory[chatHistory.length - 1].content += "\n" + message.content;
+  });
+  const question = messages[messages.length - 1].content;
+  const restHistory = chatHistory.slice(0, -1);
+  const response = await standaloneQuestionChain.invoke({
+    chat_history: restHistory,
+    question,
+  });
+  return response;
+}
 module.exports = {
   loadPDF,
   loadMarkdown,
   persistEmbeddings,
   conductQuery,
+  chat,
 };

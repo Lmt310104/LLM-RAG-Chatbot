@@ -3,55 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RAG Evaluation</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
+    <title>RAG Chat System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   </head>
   <body class="bg-gray-100 min-h-screen p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6">RAG Evaluation</h1>
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">RAG Chat System</h1>
 
+      <!-- File Upload Section -->
       <div class="mb-6">
-        <label for="query" class="block text-sm font-medium text-gray-700 mb-2"
-          >Enter your test response:</label
-        >
+        <label class="block text-sm font-medium text-gray-700 mb-2">Upload PDF Document:</label>
         <input
-        id="fileInput"
-        type="file"
-        accept="application/pdf"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />      
+          id="fileInput"
+          type="file"
+          accept="application/pdf"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
-      <button
-        id="submit"
-        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-      >
-        Evaluate Response
-      </button>
+      <!-- Chat Interface -->
+      <div class="border rounded-lg h-96 mb-4 flex flex-col">
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+          <!-- Messages will be inserted here -->
+        </div>
 
-      <div id="loading" class="hidden mt-4">
-        <div class="flex items-center justify-center">
-          <div
-            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-          ></div>
-          <span class="ml-2 text-gray-600">Evaluating...</span>
+        <!-- Message Input -->
+        <div class="border-t p-4 bg-gray-50">
+          <div class="flex space-x-2">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type your message..."
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              id="sendMessage"
+              class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
 
-      <div id="result" class="hidden mt-6 p-4 bg-gray-50 rounded-md">
-        <h2 class="text-lg font-semibold text-gray-800 mb-2">
-          Evaluation Result:
-        </h2>
-        <div id="resultContent" class="text-gray-600 whitespace-pre-wrap"></div>
+      <div id="loading" class="hidden mt-4">
+        <div class="flex items-center justify-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span class="ml-2 text-gray-600">Processing...</span>
+        </div>
       </div>
 
-      <div
-        id="error"
-        class="hidden mt-4 p-4 bg-red-50 text-red-700 rounded-md"
-      ></div>
+      <div id="error" class="hidden mt-4 p-4 bg-red-50 text-red-700 rounded-md"></div>
     </div>
 
     <script src="/js/config.js"></script>
